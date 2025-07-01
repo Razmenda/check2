@@ -32,7 +32,7 @@ export const useAuth = () => {
   return context;
 };
 
-const API_BASE_URL = '';
+const API_BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:5000';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);

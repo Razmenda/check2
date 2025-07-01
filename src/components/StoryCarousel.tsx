@@ -27,7 +27,7 @@ interface StoryCarouselProps {
   onCreateStory: () => void;
 }
 
-const API_BASE_URL = '';
+const API_BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:5000';
 
 const StoryCarousel: React.FC<StoryCarouselProps> = ({ onStoryClick, onCreateStory }) => {
   const [storyGroups, setStoryGroups] = useState<StoryGroup[]>([]);

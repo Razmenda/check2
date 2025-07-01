@@ -7,26 +7,26 @@ import AvatarUpload from '../components/AvatarUpload';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const API_BASE_URL = '';
+const API_BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:5000';
 
 const ProfileScreen: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { isDarkMode } = useTheme();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     username: user?.username || '',
     email: user?.email || '',
-    bio: 'Hey there! I am using Chekawak Messenger.',
-    phone: '+1 234 567 8900'
+    bio: user?.bio || 'Hey there! I am using Chekawak Messenger.',
+    phone: user?.phone || ''
   });
 
   const handleSave = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`${API_BASE_URL}/api/users/${user?.id}`, {
+      const response = await axios.put(`${API_BASE_URL}/api/users/${user?.id}`, {
         username: formData.username,
         bio: formData.bio,
         phone: formData.phone
@@ -34,6 +34,13 @@ const ProfileScreen: React.FC = () => {
         headers: {
           Authorization: `Bearer ${token}`
         }
+      });
+
+      // Update user context
+      updateUser({
+        username: formData.username,
+        bio: formData.bio,
+        phone: formData.phone
       });
 
       toast.success('Profile updated successfully!');
@@ -50,8 +57,8 @@ const ProfileScreen: React.FC = () => {
     setFormData({
       username: user?.username || '',
       email: user?.email || '',
-      bio: 'Hey there! I am using Chekawak Messenger.',
-      phone: '+1 234 567 8900'
+      bio: user?.bio || 'Hey there! I am using Chekawak Messenger.',
+      phone: user?.phone || ''
     });
     setIsEditing(false);
   };
@@ -62,15 +69,16 @@ const ProfileScreen: React.FC = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`${API_BASE_URL}/api/users/${user?.id}/avatar`, formData, {
+      const response = await axios.post(`${API_BASE_URL}/api/users/${user?.id}/avatar`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
         }
       });
 
+      // Update user context with new avatar
+      updateUser({ avatar: response.data.avatar });
       toast.success('Avatar updated successfully!');
-      // In a real app, you'd update the user context here
     } catch (error: any) {
       console.error('Error updating avatar:', error);
       toast.error('Failed to update avatar');
@@ -196,7 +204,7 @@ const ProfileScreen: React.FC = () => {
               />
             ) : (
               <p className={`${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                {formData.phone}
+                {formData.phone || 'Not set'}
               </p>
             )}
           </div>

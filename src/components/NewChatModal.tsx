@@ -23,7 +23,7 @@ interface NewChatModalProps {
   onChatCreated: (chat: Chat) => void;
 }
 
-const API_BASE_URL = '';
+const API_BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:5000';
 
 const NewChatModal: React.FC<NewChatModalProps> = ({ onClose, onChatCreated }) => {
   const [searchQuery, setSearchQuery] = useState('');

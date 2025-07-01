@@ -55,7 +55,7 @@ interface StoryGroup {
   hasUnviewed: boolean;
 }
 
-const API_BASE_URL = '';
+const API_BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:5000';
 
 const ChatsScreen: React.FC = () => {
   const [chats, setChats] = useState<Chat[]>([]);
@@ -231,9 +231,13 @@ const ChatsScreen: React.FC = () => {
           {/* Header Title and Menu */}
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold tracking-wide">Chats</h1>
-            <button className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200">
-              <MoreVertical className="h-6 w-6" />
-            </button>
+            <div className="flex items-center space-x-2">
+              {/* Connection Status */}
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`}></div>
+              <button className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200">
+                <MoreVertical className="h-6 w-6" />
+              </button>
+            </div>
           </div>
           
           {/* Search Bar */}

@@ -38,7 +38,7 @@ interface Chat {
   }>;
 }
 
-const API_BASE_URL = '';
+const API_BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:5000';
 
 const ChatView: React.FC = () => {
   const { chatId } = useParams<{ chatId: string }>();

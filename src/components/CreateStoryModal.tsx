@@ -8,7 +8,7 @@ interface CreateStoryModalProps {
   onStoryCreated: () => void;
 }
 
-const API_BASE_URL = '';
+const API_BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:5000';
 
 const CreateStoryModal: React.FC<CreateStoryModalProps> = ({ onClose, onStoryCreated }) => {
   const [storyType, setStoryType] = useState<'text' | 'image' | 'video'>('text');

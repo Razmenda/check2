@@ -17,7 +17,7 @@ export const useSocket = () => {
   return context;
 };
 
-const SOCKET_URL = '';
+const SOCKET_URL = import.meta.env.PROD ? '' : 'http://localhost:5000';
 
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -30,6 +30,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         auth: {
           token: token,
         },
+        transports: ['websocket', 'polling'],
+        timeout: 20000,
+        forceNew: true
       });
 
       newSocket.on('connect', () => {
@@ -39,6 +42,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       newSocket.on('disconnect', () => {
         console.log('Disconnected from server');
+        setIsConnected(false);
+      });
+
+      newSocket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error);
         setIsConnected(false);
       });
 
