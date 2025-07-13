@@ -11,11 +11,11 @@ export default {
           200: '#bce4cc',
           300: '#8dd0a8',
           400: '#57b37d',
-          500: '#339959',
-          600: '#267a44',
-          700: '#1f6137',
-          800: '#1a4d2e',
-          900: '#1F3934',
+          500: '#471396', // Main brand color
+          600: '#3d1082',
+          700: '#330d6e',
+          800: '#290a5a',
+          900: '#1f0746',
         },
         accent: {
           50: '#fef9ed',
@@ -32,9 +32,9 @@ export default {
         background: '#FAFBFC',
         card: '#FFFFFF',
         dark: {
-          primary: '#1F3934',
-          secondary: '#2A4A42',
-          surface: '#334A45',
+          primary: '#1F0746',
+          secondary: '#290a5a',
+          surface: '#330d6e',
         }
       },
       fontFamily: {

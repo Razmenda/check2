@@ -217,7 +217,7 @@ const ChatsScreen: React.FC = () => {
   if (loading) {
     return (
       <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-background'} flex items-center justify-center`}>
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-800"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
       </div>
     );
   }
@@ -225,7 +225,7 @@ const ChatsScreen: React.FC = () => {
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Enhanced Header with Gradient Background */}
-      <div className="bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-800 text-white">
+      <div className="bg-gradient-primary text-white">
         {/* Status Bar Area */}
         <div className="pt-12 px-4">
           {/* Header Title and Menu */}
@@ -275,7 +275,7 @@ const ChatsScreen: React.FC = () => {
               </p>
               <button
                 onClick={() => setShowNewChatModal(true)}
-                className="bg-primary-800 text-white px-6 py-3 rounded-full font-semibold hover:bg-primary-700 transition-colors duration-200"
+                className="bg-primary-500 text-white px-6 py-3 rounded-full font-semibold hover:bg-primary-600 transition-colors duration-200"
               >
                 Start Conversation
               </button>

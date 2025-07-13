@@ -17,7 +17,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabCha
       id: 'chats', 
       icon: MessageCircle, 
       label: 'Chats', 
-      color: '#10B981',
+      color: '#471396',
       route: '/chats'
     },
     { 

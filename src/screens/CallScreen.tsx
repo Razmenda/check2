@@ -8,7 +8,9 @@ import {
   PhoneOff,
   Volume2,
   VolumeX,
-  MoreVertical
+  MoreVertical,
+  Users,
+  MessageCircle
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
@@ -32,7 +34,16 @@ interface Call {
   };
 }
 
-const API_BASE_URL = '';
+interface Participant {
+  id: number;
+  username: string;
+  avatar?: string;
+  isMuted: boolean;
+  isVideoOff: boolean;
+  stream?: MediaStream;
+}
+
+const API_BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:5000';
 
 const CallScreen: React.FC = () => {
   const { callId } = useParams<{ callId: string }>();
@@ -41,15 +52,18 @@ const CallScreen: React.FC = () => {
   const { socket } = useSocket();
 
   const [call, setCall] = useState<Call | null>(null);
+  const [participants, setParticipants] = useState<Participant[]>([]);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
   const [callDuration, setCallDuration] = useState(0);
   const [callStatus, setCallStatus] = useState<'connecting' | 'ringing' | 'connected' | 'ended'>('connecting');
+  const [showParticipants, setShowParticipants] = useState(false);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const peerConnectionsRef = useRef<Map<number, RTCPeerConnection>>(new Map());
   const callStartTimeRef = useRef<number>(0);
   const durationIntervalRef = useRef<NodeJS.Timeout>();
 
@@ -63,7 +77,19 @@ const CallScreen: React.FC = () => {
         const response = await axios.get(`${API_BASE_URL}/api/calls/${callId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        
         setCall(response.data);
+        
+        // Initialize participants
+        const callParticipants: Participant[] = response.data.participants.map((id: number) => ({
+          id,
+          username: id === response.data.initiator.id ? response.data.initiator.username : `User ${id}`,
+          avatar: id === response.data.initiator.id ? response.data.initiator.avatar : undefined,
+          isMuted: false,
+          isVideoOff: false
+        }));
+        
+        setParticipants(callParticipants);
         
         if (response.data.status === 'pending') {
           setCallStatus('ringing');
@@ -101,13 +127,21 @@ const CallScreen: React.FC = () => {
 
         setCallStatus('connected');
         startCallTimer();
+
+        // Initialize WebRTC connections for each participant
+        participants.forEach(participant => {
+          if (participant.id !== user?.id) {
+            initializePeerConnection(participant.id, stream);
+          }
+        });
+
       } catch (error) {
         console.error('Error accessing media devices:', error);
         toast.error('Failed to access camera/microphone');
       }
     };
 
-    if (call) {
+    if (call && participants.length > 0) {
       initializeMedia();
     }
 
@@ -115,8 +149,118 @@ const CallScreen: React.FC = () => {
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(track => track.stop());
       }
+      peerConnectionsRef.current.forEach(pc => pc.close());
     };
-  }, [call]);
+  }, [call, participants]);
+
+  // Socket event listeners for WebRTC signaling
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleWebRTCOffer = async (data: any) => {
+      const { offer, fromUserId } = data;
+      const peerConnection = peerConnectionsRef.current.get(fromUserId);
+      
+      if (peerConnection) {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        
+        socket.emit('webrtc_answer', {
+          targetUserId: fromUserId,
+          answer,
+          callId
+        });
+      }
+    };
+
+    const handleWebRTCAnswer = async (data: any) => {
+      const { answer, fromUserId } = data;
+      const peerConnection = peerConnectionsRef.current.get(fromUserId);
+      
+      if (peerConnection) {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+      }
+    };
+
+    const handleWebRTCIceCandidate = async (data: any) => {
+      const { candidate, fromUserId } = data;
+      const peerConnection = peerConnectionsRef.current.get(fromUserId);
+      
+      if (peerConnection) {
+        await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+      }
+    };
+
+    const handleCallEnded = () => {
+      setCallStatus('ended');
+      endCall();
+    };
+
+    socket.on('webrtc_offer', handleWebRTCOffer);
+    socket.on('webrtc_answer', handleWebRTCAnswer);
+    socket.on('webrtc_ice_candidate', handleWebRTCIceCandidate);
+    socket.on('call_ended', handleCallEnded);
+
+    return () => {
+      socket.off('webrtc_offer', handleWebRTCOffer);
+      socket.off('webrtc_answer', handleWebRTCAnswer);
+      socket.off('webrtc_ice_candidate', handleWebRTCIceCandidate);
+      socket.off('call_ended', handleCallEnded);
+    };
+  }, [socket, callId]);
+
+  const initializePeerConnection = async (participantId: number, localStream: MediaStream) => {
+    const peerConnection = new RTCPeerConnection({
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+      ]
+    });
+
+    // Add local stream to peer connection
+    localStream.getTracks().forEach(track => {
+      peerConnection.addTrack(track, localStream);
+    });
+
+    // Handle remote stream
+    peerConnection.ontrack = (event) => {
+      const [remoteStream] = event.streams;
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = remoteStream;
+      }
+      
+      // Update participant with stream
+      setParticipants(prev => prev.map(p => 
+        p.id === participantId ? { ...p, stream: remoteStream } : p
+      ));
+    };
+
+    // Handle ICE candidates
+    peerConnection.onicecandidate = (event) => {
+      if (event.candidate && socket) {
+        socket.emit('webrtc_ice_candidate', {
+          targetUserId: participantId,
+          candidate: event.candidate,
+          callId
+        });
+      }
+    };
+
+    peerConnectionsRef.current.set(participantId, peerConnection);
+
+    // Create and send offer
+    const offer = await peerConnection.createOffer();
+    await peerConnection.setLocalDescription(offer);
+    
+    if (socket) {
+      socket.emit('webrtc_offer', {
+        targetUserId: participantId,
+        offer,
+        callId
+      });
+    }
+  };
 
   const startCallTimer = () => {
     callStartTimeRef.current = Date.now();
@@ -137,6 +281,11 @@ const CallScreen: React.FC = () => {
       if (audioTrack) {
         audioTrack.enabled = isMuted;
         setIsMuted(!isMuted);
+        
+        // Update participant state
+        setParticipants(prev => prev.map(p => 
+          p.id === user?.id ? { ...p, isMuted: !isMuted } : p
+        ));
       }
     }
   };
@@ -147,6 +296,11 @@ const CallScreen: React.FC = () => {
       if (videoTrack) {
         videoTrack.enabled = isVideoOff;
         setIsVideoOff(!isVideoOff);
+        
+        // Update participant state
+        setParticipants(prev => prev.map(p => 
+          p.id === user?.id ? { ...p, isVideoOff: !isVideoOff } : p
+        ));
       }
     }
   };
@@ -182,9 +336,18 @@ const CallScreen: React.FC = () => {
       localStreamRef.current.getTracks().forEach(track => track.stop());
     }
 
+    // Close peer connections
+    peerConnectionsRef.current.forEach(pc => pc.close());
+
     setCallStatus('ended');
     toast.success('Call ended');
     navigate('/chats');
+  };
+
+  const openChat = () => {
+    if (call?.Chat.id) {
+      navigate(`/chats/${call.Chat.id}`);
+    }
   };
 
   if (!call) {
@@ -196,6 +359,7 @@ const CallScreen: React.FC = () => {
   }
 
   const isVideoCall = call.type === 'video';
+  const otherParticipants = participants.filter(p => p.id !== user?.id);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden">
@@ -214,7 +378,7 @@ const CallScreen: React.FC = () => {
 
       {/* Audio Call Background */}
       {!isVideoCall && (
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900">
+        <div className="absolute inset-0 bg-gradient-primary">
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <div className="w-32 h-32 rounded-full overflow-hidden mx-auto mb-6">
@@ -236,20 +400,81 @@ const CallScreen: React.FC = () => {
       {/* Header */}
       <div className="relative z-10 flex items-center justify-between p-6 pt-12">
         <div className="text-center flex-1">
-          <h1 className="text-2xl font-bold mb-1">{call.initiator.username}</h1>
+          <h1 className="text-2xl font-bold mb-1">
+            {call.Chat.isGroup ? call.Chat.name || 'Group Call' : call.initiator.username}
+          </h1>
           <p className="text-lg text-white/80">
             {callStatus === 'connecting' && 'Connecting...'}
             {callStatus === 'ringing' && 'Ringing...'}
             {callStatus === 'connected' && formatDuration(callDuration)}
           </p>
+          {call.Chat.isGroup && (
+            <p className="text-sm text-white/60 mt-1">
+              {participants.length} participants
+            </p>
+          )}
         </div>
-        <button className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200">
-          <MoreVertical className="h-6 w-6" />
-        </button>
+        <div className="flex items-center space-x-2">
+          {call.Chat.isGroup && (
+            <button 
+              onClick={() => setShowParticipants(!showParticipants)}
+              className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200"
+            >
+              <Users className="h-6 w-6" />
+            </button>
+          )}
+          <button 
+            onClick={openChat}
+            className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200"
+          >
+            <MessageCircle className="h-6 w-6" />
+          </button>
+          <button className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200">
+            <MoreVertical className="h-6 w-6" />
+          </button>
+        </div>
       </div>
 
-      {/* Local Video (Picture-in-Picture) */}
-      {isVideoCall && (
+      {/* Participants Grid for Group Calls */}
+      {call.Chat.isGroup && isVideoCall && (
+        <div className="absolute inset-x-4 top-32 bottom-32 z-10">
+          <div className="grid grid-cols-2 gap-4 h-full">
+            {participants.slice(0, 4).map((participant) => (
+              <div key={participant.id} className="relative bg-gray-800 rounded-2xl overflow-hidden">
+                {participant.stream && !participant.isVideoOff ? (
+                  <video
+                    autoPlay
+                    playsInline
+                    muted={participant.id === user?.id}
+                    className="w-full h-full object-cover"
+                    ref={participant.id === user?.id ? localVideoRef : undefined}
+                    srcObject={participant.id === user?.id ? localStreamRef.current : participant.stream}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="w-16 h-16 bg-gray-600 rounded-full flex items-center justify-center">
+                      <span className="text-white text-lg font-semibold">
+                        {participant.username.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Participant Info */}
+                <div className="absolute bottom-2 left-2 bg-black/50 rounded-lg px-2 py-1">
+                  <span className="text-white text-sm">{participant.username}</span>
+                  {participant.isMuted && (
+                    <MicOff className="h-3 w-3 text-red-400 ml-1 inline" />
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Local Video (Picture-in-Picture) for 1-on-1 calls */}
+      {isVideoCall && !call.Chat.isGroup && (
         <div className="absolute top-20 right-4 z-20 w-32 h-48 bg-gray-800 rounded-2xl overflow-hidden">
           <video
             ref={localVideoRef}
@@ -267,6 +492,37 @@ const CallScreen: React.FC = () => {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Participants List */}
+      {showParticipants && (
+        <div className="absolute right-4 top-32 bottom-32 w-64 bg-black/80 backdrop-blur-sm rounded-2xl p-4 z-20">
+          <h3 className="text-lg font-semibold mb-4">Participants ({participants.length})</h3>
+          <div className="space-y-3">
+            {participants.map((participant) => (
+              <div key={participant.id} className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-full overflow-hidden">
+                  {participant.avatar ? (
+                    <img src={participant.avatar} alt={participant.username} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gray-600 flex items-center justify-center">
+                      <span className="text-white text-sm font-semibold">
+                        {participant.username.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="text-white font-medium">{participant.username}</p>
+                  <div className="flex items-center space-x-2">
+                    {participant.isMuted && <MicOff className="h-3 w-3 text-red-400" />}
+                    {participant.isVideoOff && <VideoOff className="h-3 w-3 text-red-400" />}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

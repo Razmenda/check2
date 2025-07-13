@@ -5,6 +5,37 @@ import { authenticateToken } from '../middleware/auth.js';
 const { Call, Chat, ChatParticipant, User } = models;
 const router = express.Router();
 
+// Get user's call history
+router.get('/', authenticateToken, async (req, res) => {
+  try {
+    const calls = await Call.findAll({
+      where: {
+        participants: {
+          [models.sequelize.Op.contains]: [req.user.id]
+        }
+      },
+      include: [
+        {
+          model: User,
+          as: 'initiator',
+          attributes: ['id', 'username', 'avatar']
+        },
+        {
+          model: Chat,
+          attributes: ['id', 'name', 'isGroup']
+        }
+      ],
+      order: [['createdAt', 'DESC']],
+      limit: 50
+    });
+
+    res.json(calls);
+  } catch (error) {
+    console.error('Get calls error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Initiate call
 router.post('/', authenticateToken, async (req, res) => {
   try {
@@ -106,16 +137,74 @@ router.put('/:id', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Not authorized to update this call' });
     }
 
-    await call.update({
-      ...(status && { status }),
-      ...(startedAt && { startedAt }),
-      ...(endedAt && { endedAt }),
-      ...(duration && { duration })
+    const updateData = {};
+    if (status) updateData.status = status;
+    if (startedAt) updateData.startedAt = startedAt;
+    if (endedAt) updateData.endedAt = endedAt;
+    if (duration !== undefined) updateData.duration = duration;
+
+    await call.update(updateData);
+
+    const updatedCall = await Call.findByPk(call.id, {
+      include: [
+        {
+          model: User,
+          as: 'initiator',
+          attributes: ['id', 'username', 'avatar']
+        },
+        {
+          model: Chat,
+          attributes: ['id', 'name', 'isGroup']
+        }
+      ]
     });
 
-    res.json(call);
+    res.json(updatedCall);
   } catch (error) {
     console.error('Update call error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get call statistics
+router.get('/stats/summary', authenticateToken, async (req, res) => {
+  try {
+    const totalCalls = await Call.count({
+      where: {
+        participants: {
+          [models.sequelize.Op.contains]: [req.user.id]
+        }
+      }
+    });
+
+    const missedCalls = await Call.count({
+      where: {
+        participants: {
+          [models.sequelize.Op.contains]: [req.user.id]
+        },
+        status: 'missed'
+      }
+    });
+
+    const totalDuration = await Call.sum('duration', {
+      where: {
+        participants: {
+          [models.sequelize.Op.contains]: [req.user.id]
+        },
+        status: 'ended',
+        duration: {
+          [models.sequelize.Op.not]: null
+        }
+      }
+    });
+
+    res.json({
+      totalCalls,
+      missedCalls,
+      totalDuration: totalDuration || 0
+    });
+  } catch (error) {
+    console.error('Get call stats error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -155,7 +155,7 @@
 
 /* Gradient text */
 .gradient-text {
-  background: linear-gradient(135deg, #F3C883, #eb9d2a);
+  background: linear-gradient(135deg, #471396, #330d6e);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -221,14 +221,14 @@
 }
 
 .shadow-glow {
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 20px rgba(71, 19, 150, 0.3);
 }
 
 /* Gradient backgrounds */
-.bg-gradient-emerald {
-  background: linear-gradient(135deg, #059669, #047857, #065f46);
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #471396, #330d6e, #1f0746);
 }
 
-.bg-gradient-teal {
-  background: linear-gradient(135deg, #0d9488, #0f766e, #134e4a);
+.bg-gradient-accent {
+  background: linear-gradient(135deg, #eb9d2a, #d6841f, #b2681c);
 }
