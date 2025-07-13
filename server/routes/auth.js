@@ -12,7 +12,7 @@ router.post('/signup', async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
-    console.log('Signup attempt:', { username, email, passwordLength: password?.length });
+    console.log('📝 Signup attempt:', { username, email, passwordLength: password?.length });
 
     // Validate input
     if (!username || !email || !password) {
@@ -61,7 +61,7 @@ router.post('/signup', async (req, res) => {
     const saltRounds = 12;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
-    console.log('Creating user with data:', {
+    console.log('✅ Creating user with data:', {
       username: trimmedUsername,
       email: trimmedEmail,
       hasPasswordHash: !!passwordHash
@@ -77,7 +77,7 @@ router.post('/signup', async (req, res) => {
       phone: ''
     });
 
-    console.log('User created successfully:', { id: user.id, username: user.username, email: user.email });
+    console.log('✅ User created successfully:', { id: user.id, username: user.username, email: user.email });
 
     // Generate JWT
     const token = jwt.sign(
@@ -99,7 +99,7 @@ router.post('/signup', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Signup error:', error);
+    console.error('❌ Signup error:', error);
     
     if (error.name === 'SequelizeValidationError') {
       const validationErrors = error.errors.map(err => err.message);
@@ -118,7 +118,7 @@ router.post('/signup', async (req, res) => {
     }
 
     if (error.name === 'SequelizeDatabaseError') {
-      console.error('Database error:', error.message);
+      console.error('💥 Database error:', error.message);
       return res.status(500).json({ error: 'Database error. Please try again.' });
     }
     
@@ -131,7 +131,7 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    console.log('Login attempt:', { email });
+    console.log('🔐 Login attempt:', { email });
 
     // Validate input
     if (!email || !password) {
@@ -154,16 +154,16 @@ router.post('/login', async (req, res) => {
     });
     
     if (!user) {
-      console.log('User not found for email:', trimmedEmail);
+      console.log('❌ User not found for email:', trimmedEmail);
       return res.status(400).json({ error: 'Invalid email or password' });
     }
 
-    console.log('User found:', { id: user.id, username: user.username, email: user.email });
+    console.log('✅ User found:', { id: user.id, username: user.username, email: user.email });
 
     // Check password
     const isValidPassword = await bcrypt.compare(password, user.passwordHash);
     if (!isValidPassword) {
-      console.log('Invalid password for user:', user.email);
+      console.log('❌ Invalid password for user:', user.email);
       return res.status(400).json({ error: 'Invalid email or password' });
     }
 
@@ -180,7 +180,7 @@ router.post('/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    console.log('Login successful for user:', user.email);
+    console.log('✅ Login successful for user:', user.email);
 
     res.json({
       token,
@@ -195,10 +195,10 @@ router.post('/login', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('❌ Login error:', error);
     
     if (error.name === 'SequelizeDatabaseError') {
-      console.error('Database error:', error.message);
+      console.error('💥 Database error:', error.message);
       return res.status(500).json({ error: 'Database error. Please try again.' });
     }
     
@@ -241,7 +241,7 @@ router.post('/refresh', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Token refresh error:', error);
+    console.error('❌ Token refresh error:', error);
     res.status(403).json({ error: 'Invalid token' });
   }
 });

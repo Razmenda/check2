@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Lock, MessageCircle, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, MessageCircle, Eye, EyeOff, User, Key } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const LoginScreen: React.FC = () => {
@@ -14,10 +14,8 @@ const LoginScreen: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Clear previous errors
     setError('');
     
-    // Validate inputs
     if (!email.trim()) {
       setError('Email is required');
       return;
@@ -28,7 +26,6 @@ const LoginScreen: React.FC = () => {
       return;
     }
 
-    // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
       setError('Please enter a valid email address');
@@ -46,6 +43,16 @@ const LoginScreen: React.FC = () => {
     }
   };
 
+  const handleQuickLogin = (userType: 'admin' | 'demo') => {
+    if (userType === 'admin') {
+      setEmail('admin@chekawak.com');
+      setPassword('admin123');
+    } else {
+      setEmail('john@example.com');
+      setPassword('demo123');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-dark-primary via-dark-secondary to-dark-surface flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -56,6 +63,24 @@ const LoginScreen: React.FC = () => {
           </div>
           <h1 className="text-4xl font-bold text-white mb-3 gradient-text">Chekawak</h1>
           <p className="text-white/70 text-lg">Welcome back</p>
+        </div>
+
+        {/* Quick Login Buttons */}
+        <div className="mb-6 space-y-3">
+          <button
+            onClick={() => handleQuickLogin('admin')}
+            className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-3 px-4 rounded-2xl font-semibold hover:from-red-600 hover:to-red-700 transition-all duration-200 flex items-center justify-center"
+          >
+            <User className="h-5 w-5 mr-2" />
+            Quick Login as Admin
+          </button>
+          <button
+            onClick={() => handleQuickLogin('demo')}
+            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-4 rounded-2xl font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-200 flex items-center justify-center"
+          >
+            <Key className="h-5 w-5 mr-2" />
+            Quick Login as Demo User
+          </button>
         </div>
 
         {/* Login Form */}
@@ -141,6 +166,15 @@ const LoginScreen: React.FC = () => {
                 Sign up
               </Link>
             </p>
+          </div>
+
+          {/* Credentials Info */}
+          <div className="mt-6 p-4 bg-white/5 rounded-2xl backdrop-blur-sm">
+            <h4 className="text-white/90 text-sm font-semibold mb-2">Test Credentials:</h4>
+            <div className="text-xs text-white/70 space-y-1">
+              <p><strong>Admin:</strong> admin@chekawak.com / admin123</p>
+              <p><strong>Demo:</strong> john@example.com / demo123</p>
+            </div>
           </div>
         </div>
 

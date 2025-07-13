@@ -83,6 +83,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     try {
+      console.log('🔐 Attempting login for:', email);
+      
       const response = await axios.post(`${API_BASE_URL}/api/auth/login`, {
         email: email.trim(),
         password,
@@ -95,9 +97,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('token', newToken);
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
       
+      console.log('✅ Login successful for:', userData.username);
       toast.success(`Welcome back, ${userData.username}!`);
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error('❌ Login error:', error);
       const errorMessage = error.response?.data?.error || 'Login failed. Please try again.';
       toast.error(errorMessage);
       throw new Error(errorMessage);
@@ -106,6 +109,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (username: string, email: string, password: string) => {
     try {
+      console.log('📝 Attempting registration for:', email);
+      
       const response = await axios.post(`${API_BASE_URL}/api/auth/signup`, {
         username: username.trim(),
         email: email.trim(),
@@ -119,9 +124,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('token', newToken);
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
       
+      console.log('✅ Registration successful for:', userData.username);
       toast.success(`Welcome to Chekawak, ${userData.username}!`);
     } catch (error: any) {
-      console.error('Registration error:', error);
+      console.error('❌ Registration error:', error);
       const errorMessage = error.response?.data?.error || 'Registration failed. Please try again.';
       toast.error(errorMessage);
       throw new Error(errorMessage);
@@ -129,6 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    console.log('👋 Logging out user:', user?.username);
     setUser(null);
     setToken(null);
     localStorage.removeItem('token');

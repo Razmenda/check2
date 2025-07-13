@@ -26,6 +26,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => {
     if (token && user) {
+      console.log('🔌 Connecting to socket server...');
+      
       const newSocket = io(SOCKET_URL, {
         auth: {
           token: token,
@@ -36,31 +38,38 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       });
 
       newSocket.on('connect', () => {
-        console.log('Connected to server');
+        console.log('✅ Connected to socket server');
         setIsConnected(true);
       });
 
-      newSocket.on('disconnect', () => {
-        console.log('Disconnected from server');
+      newSocket.on('disconnect', (reason) => {
+        console.log('❌ Disconnected from socket server:', reason);
         setIsConnected(false);
       });
 
       newSocket.on('connect_error', (error) => {
-        console.error('Socket connection error:', error);
+        console.error('💥 Socket connection error:', error);
         setIsConnected(false);
       });
 
       newSocket.on('error', (error) => {
-        console.error('Socket error:', error);
+        console.error('💥 Socket error:', error);
+      });
+
+      // Debug socket events
+      newSocket.onAny((event, ...args) => {
+        console.log('📡 Socket event:', event, args);
       });
 
       setSocket(newSocket);
 
       return () => {
+        console.log('🔌 Cleaning up socket connection...');
         newSocket.close();
       };
     } else {
       if (socket) {
+        console.log('🔌 Closing socket connection (no auth)...');
         socket.close();
         setSocket(null);
         setIsConnected(false);

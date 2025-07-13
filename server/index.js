@@ -16,6 +16,7 @@ import callRoutes from './routes/calls.js';
 import storyRoutes from './routes/stories.js';
 import { authenticateSocket } from './middleware/auth.js';
 import { handleSocketConnection } from './socket/socketHandlers.js';
+import { createAdminUser, createDemoUsers } from './seedAdmin.js';
 
 dotenv.config();
 
@@ -40,6 +41,7 @@ const storiesDir = path.join(uploadsDir, 'stories');
 [uploadsDir, avatarsDir, storiesDir].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
+    console.log(`📁 Created directory: ${dir}`);
   }
 });
 
@@ -54,7 +56,12 @@ app.use('/uploads', express.static(uploadsDir));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage()
+  });
 });
 
 // API Routes
@@ -93,6 +100,14 @@ if (process.env.NODE_ENV === 'production') {
         messages: '/api/messages',
         calls: '/api/calls',
         stories: '/api/stories'
+      },
+      adminCredentials: {
+        email: 'admin@chekawak.com',
+        password: 'admin123'
+      },
+      demoCredentials: {
+        email: 'john@example.com',
+        password: 'demo123'
       }
     });
   });
@@ -103,33 +118,51 @@ const PORT = process.env.PORT || 5000;
 // Initialize database and start server
 async function startServer() {
   try {
-    console.log('Connecting to database...');
-    await sequelize.authenticate();
-    console.log('Database connection established successfully.');
+    console.log('🔄 Starting Chekawak Messenger Server...');
+    console.log('🔗 Connecting to database...');
     
-    console.log('Synchronizing database...');
-    // Use force: false and alter: true for development, force: false for production
+    await sequelize.authenticate();
+    console.log('✅ Database connection established successfully.');
+    
+    console.log('🔄 Synchronizing database...');
     await sequelize.sync({ 
-      force: false, // Never drop tables
-      alter: process.env.NODE_ENV === 'development' // Only alter in development
+      force: false,
+      alter: process.env.NODE_ENV === 'development'
     });
-    console.log('Database synchronized successfully.');
+    console.log('✅ Database synchronized successfully.');
+
+    // Create admin user and demo users
+    console.log('👤 Setting up users...');
+    await createAdminUser();
+    await createDemoUsers();
 
     server.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log('Database tables created successfully');
-      console.log('Upload directories created successfully');
-      console.log(`Database file: ${process.env.DB_PATH || './database.sqlite'}`);
+      console.log('\n🚀 Chekawak Messenger Server Started Successfully!');
+      console.log(`📡 Server running on port ${PORT}`);
+      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`💾 Database: ${process.env.DB_PATH || './database.sqlite'}`);
+      console.log('\n👨‍💼 Admin Credentials:');
+      console.log('📧 Email: admin@chekawak.com');
+      console.log('🔑 Password: admin123');
+      console.log('\n👥 Demo User Credentials:');
+      console.log('📧 Email: john@example.com');
+      console.log('🔑 Password: demo123');
+      console.log('\n🔗 API Endpoints:');
+      console.log(`   Auth: http://localhost:${PORT}/api/auth`);
+      console.log(`   Users: http://localhost:${PORT}/api/users`);
+      console.log(`   Chats: http://localhost:${PORT}/api/chats`);
+      console.log(`   Messages: http://localhost:${PORT}/api/messages`);
+      console.log(`   Calls: http://localhost:${PORT}/api/calls`);
+      console.log(`   Stories: http://localhost:${PORT}/api/stories`);
+      console.log('\n✨ Ready to accept connections!');
     });
   } catch (error) {
-    console.error('Unable to start server:', error);
+    console.error('❌ Unable to start server:', error);
     
-    // More detailed error logging
     if (error.name === 'SequelizeConnectionError') {
-      console.error('Database connection failed. Check your database configuration.');
+      console.error('💥 Database connection failed. Check your database configuration.');
     } else if (error.name === 'SequelizeDatabaseError') {
-      console.error('Database error:', error.message);
+      console.error('💥 Database error:', error.message);
     }
     
     process.exit(1);
@@ -138,15 +171,26 @@ async function startServer() {
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
-  console.log('Shutting down gracefully...');
+  console.log('\n🔄 Shutting down gracefully...');
   try {
     await sequelize.close();
-    console.log('Database connection closed.');
+    console.log('✅ Database connection closed.');
     process.exit(0);
   } catch (error) {
-    console.error('Error during shutdown:', error);
+    console.error('❌ Error during shutdown:', error);
     process.exit(1);
   }
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('💥 Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
 });
 
 startServer();

@@ -22,7 +22,7 @@ export const authenticateToken = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
-    console.error('Token verification error:', error);
+    console.error('❌ Token verification error:', error);
     
     if (error.name === 'JsonWebTokenError') {
       return res.status(403).json({ error: 'Invalid token format' });
@@ -51,9 +51,10 @@ export const authenticateSocket = async (socket, next) => {
 
     socket.userId = user.id;
     socket.user = user;
+    console.log(`✅ Socket authenticated for user: ${user.username}`);
     next();
   } catch (error) {
-    console.error('Socket authentication error:', error);
+    console.error('❌ Socket authentication error:', error);
     
     if (error.name === 'JsonWebTokenError') {
       next(new Error('Authentication error - invalid token format'));
