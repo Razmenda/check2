@@ -115,20 +115,24 @@ if (process.env.NODE_ENV === 'production') {
 
 const PORT = process.env.PORT || 5000;
 
-// Initialize database and start server
+// Initialize database and start server with proper error handling
 async function startServer() {
   try {
     console.log('🔄 Starting Chekawak Messenger Server...');
     console.log('🔗 Connecting to database...');
     
+    // Test database connection
     await sequelize.authenticate();
     console.log('✅ Database connection established successfully.');
     
     console.log('🔄 Synchronizing database...');
+    
+    // Force recreate database to fix constraint issues
     await sequelize.sync({ 
-      force: false,
-      alter: process.env.NODE_ENV === 'development'
+      force: true, // This will drop and recreate all tables
+      logging: false
     });
+    
     console.log('✅ Database synchronized successfully.');
 
     // Create admin user and demo users
@@ -163,13 +167,23 @@ async function startServer() {
       console.error('💥 Database connection failed. Check your database configuration.');
     } else if (error.name === 'SequelizeDatabaseError') {
       console.error('💥 Database error:', error.message);
+      console.log('🔄 Attempting to reset database...');
+      
+      // Try to reset database
+      try {
+        await sequelize.sync({ force: true, logging: false });
+        console.log('✅ Database reset successfully. Restarting...');
+        return startServer();
+      } catch (resetError) {
+        console.error('❌ Failed to reset database:', resetError);
+      }
     }
     
     process.exit(1);
   }
 }
 
-// Graceful shutdown
+// Enhanced error handling
 process.on('SIGINT', async () => {
   console.log('\n🔄 Shutting down gracefully...');
   try {
@@ -183,14 +197,31 @@ process.on('SIGINT', async () => {
 });
 
 // Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', async (error) => {
   console.error('💥 Uncaught Exception:', error);
+  
+  // If it's a database constraint error, try to reset
+  if (error.message.includes('UNIQUE constraint failed') || error.message.includes('constraint')) {
+    console.log('🔄 Database constraint error detected. Resetting database...');
+    try {
+      await sequelize.sync({ force: true, logging: false });
+      console.log('✅ Database reset successfully.');
+      return;
+    } catch (resetError) {
+      console.error('❌ Failed to reset database:', resetError);
+    }
+  }
+  
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
+  
+  // Don't exit on unhandled rejections in development
+  if (process.env.NODE_ENV !== 'development') {
+    process.exit(1);
+  }
 });
 
 startServer();

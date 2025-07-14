@@ -85,6 +85,22 @@ export default (sequelize) => {
       foreignKey: 'initiatorId',
       as: 'initiatedCalls'
     });
+    User.hasMany(models.Story, {
+      foreignKey: 'userId',
+      as: 'stories'
+    });
+    User.hasMany(models.StoryView, {
+      foreignKey: 'viewerId',
+      as: 'storyViews'
+    });
+    User.hasMany(models.MessageReaction, {
+      foreignKey: 'userId',
+      as: 'messageReactions'
+    });
+    User.hasMany(models.MessageStatus, {
+      foreignKey: 'userId',
+      as: 'messageStatuses'
+    });
   };
 
   return User;
