@@ -1,6 +1,6 @@
 import models from '../models/index.js';
 
-const { User, Message, Chat, ChatParticipant } = models;
+const { User, Message, Chat, ChatParticipant, MessageStatus } = models;
 
 // Store active users and their socket connections
 const activeUsers = new Map();
@@ -37,7 +37,7 @@ export const handleSocketConnection = (socket, io) => {
   // Handle new message
   socket.on('send_message', async (data) => {
     try {
-      const { chatId, content, type = 'text' } = data;
+      const { chatId, content, type = 'text', replyToId } = data;
 
       // Verify user is participant
       const participant = await ChatParticipant.findOne({
@@ -54,16 +54,46 @@ export const handleSocketConnection = (socket, io) => {
         chatId,
         senderId: socket.userId,
         content,
-        type
+        type,
+        replyToId: replyToId || null
       });
 
-      // Get message with sender info
+      // Get all participants for message status
+      const participants = await ChatParticipant.findAll({
+        where: { chatId },
+        attributes: ['userId']
+      });
+
+      // Create message status for all participants except sender
+      const statusPromises = participants
+        .filter(p => p.userId !== socket.userId)
+        .map(p => MessageStatus.create({
+          messageId: message.id,
+          userId: p.userId,
+          status: 'delivered' // Mark as delivered since they're connected
+        }));
+
+      await Promise.all(statusPromises);
+
+      // Get message with sender info and all relations
       const fullMessage = await Message.findByPk(message.id, {
-        include: [{
-          model: User,
-          as: 'sender',
-          attributes: ['id', 'username', 'avatar']
-        }]
+        include: [
+          {
+            model: User,
+            as: 'sender',
+            attributes: ['id', 'username', 'avatar']
+          },
+          {
+            model: Message,
+            as: 'replyTo',
+            attributes: ['id', 'content'],
+            include: [{
+              model: User,
+              as: 'sender',
+              attributes: ['username']
+            }]
+          }
+        ]
       });
 
       // Update chat's updatedAt
@@ -87,6 +117,24 @@ export const handleSocketConnection = (socket, io) => {
     } catch (error) {
       console.error('Send message error:', error);
       socket.emit('error', { message: 'Failed to send message' });
+    }
+  });
+
+  // Handle message reactions
+  socket.on('message_reaction', async (data) => {
+    try {
+      const { messageId, emoji, chatId } = data;
+
+      // Emit to all participants in the chat
+      socket.to(`chat_${chatId}`).emit('message_reaction', {
+        messageId,
+        emoji,
+        userId: socket.userId,
+        chatId
+      });
+
+    } catch (error) {
+      console.error('Message reaction error:', error);
     }
   });
 
@@ -192,6 +240,25 @@ export const handleSocketConnection = (socket, io) => {
         callId,
         fromUserId: socket.userId
       });
+    }
+  });
+
+  // Handle user presence updates
+  socket.on('update_presence', async (data) => {
+    try {
+      const { status } = data;
+      await User.update(
+        { status, lastSeen: new Date() },
+        { where: { id: socket.userId } }
+      );
+
+      socket.broadcast.emit('user_status_changed', {
+        userId: socket.userId,
+        status,
+        lastSeen: new Date()
+      });
+    } catch (error) {
+      console.error('Update presence error:', error);
     }
   });
 

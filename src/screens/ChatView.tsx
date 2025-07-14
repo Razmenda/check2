@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Send, Paperclip, Phone, Video, MoreVertical, Smile, Image, FileText } from 'lucide-react';
+import { Send, Paperclip, Phone, Video, MoreVertical, Smile, Image, FileText, Mic, X, Reply } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
 import NavBar from '../components/NavBar';
 import MessageBubble from '../components/MessageBubble';
 import TypingIndicator from '../components/TypingIndicator';
+import VoiceRecorder from '../components/VoiceRecorder';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -18,6 +19,32 @@ interface Message {
   fileSize?: number;
   isEdited: boolean;
   createdAt: string;
+  replyTo?: {
+    id: number;
+    content: string;
+    sender: {
+      username: string;
+    };
+  };
+  reactions?: Array<{
+    id: number;
+    emoji: string;
+    user: {
+      id: number;
+      username: string;
+      avatar?: string;
+    };
+  }>;
+  statuses?: Array<{
+    id: number;
+    userId: number;
+    status: 'sent' | 'delivered' | 'read';
+    timestamp: string;
+  }>;
+  voiceMessage?: {
+    duration: number;
+    waveform?: number[];
+  };
   sender: {
     id: number;
     username: string;
@@ -52,6 +79,9 @@ const ChatView: React.FC = () => {
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -99,6 +129,19 @@ const ChatView: React.FC = () => {
     const handleNewMessage = (message: Message) => {
       if (message.chatId === parseInt(chatId)) {
         setMessages(prev => [...prev, message]);
+        
+        // Mark message as read if chat is open
+        markMessageAsRead(message.id);
+      }
+    };
+
+    const handleMessageReaction = (data: any) => {
+      if (data.chatId === parseInt(chatId)) {
+        setMessages(prev => prev.map(msg => 
+          msg.id === data.messageId 
+            ? { ...msg, reactions: data.reactions }
+            : msg
+        ));
       }
     };
 
@@ -117,11 +160,13 @@ const ChatView: React.FC = () => {
     };
 
     socket.on('new_message', handleNewMessage);
+    socket.on('message_reaction', handleMessageReaction);
     socket.on('typing_started', handleTypingStarted);
     socket.on('typing_stopped', handleTypingStopped);
 
     return () => {
       socket.off('new_message', handleNewMessage);
+      socket.off('message_reaction', handleMessageReaction);
       socket.off('typing_started', handleTypingStarted);
       socket.off('typing_stopped', handleTypingStopped);
     };
@@ -131,6 +176,17 @@ const ChatView: React.FC = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, typingUsers]);
+
+  const markMessageAsRead = async (messageId: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API_BASE_URL}/api/messages/${messageId}/read`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (error) {
+      console.error('Error marking message as read:', error);
+    }
+  };
 
   // Handle typing indicators
   const handleTyping = () => {
@@ -163,18 +219,24 @@ const ChatView: React.FC = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post(`${API_BASE_URL}/api/messages/${chatId}`, {
+      const messageData: any = {
         content: messageContent,
         type: 'text'
-      }, {
+      };
+
+      if (replyingTo) {
+        messageData.replyToId = replyingTo.id;
+        setReplyingTo(null);
+      }
+
+      const response = await axios.post(`${API_BASE_URL}/api/messages/${chatId}`, messageData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       // Emit via socket for real-time delivery
       socket.emit('send_message', {
         chatId: parseInt(chatId),
-        content: messageContent,
-        type: 'text'
+        ...messageData
       });
     } catch (error) {
       console.error('Error sending message:', error);
@@ -182,6 +244,36 @@ const ChatView: React.FC = () => {
       setNewMessage(messageContent); // Restore message on error
     } finally {
       setSending(false);
+    }
+  };
+
+  const sendVoiceMessage = async (audioBlob: Blob, duration: number) => {
+    if (!chatId) return;
+
+    const formData = new FormData();
+    formData.append('file', audioBlob, 'voice-message.webm');
+    formData.append('type', 'voice');
+    formData.append('duration', duration.toString());
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API_BASE_URL}/api/messages/${chatId}`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      // Emit via socket for real-time delivery
+      if (socket) {
+        socket.emit('send_message', response.data);
+      }
+
+      toast.success('Voice message sent');
+      setShowVoiceRecorder(false);
+    } catch (error) {
+      console.error('Error sending voice message:', error);
+      toast.error('Failed to send voice message');
     }
   };
 
@@ -216,6 +308,69 @@ const ChatView: React.FC = () => {
     // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  const handleReaction = async (messageId: number, emoji: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API_BASE_URL}/api/messages/${messageId}/react`, {
+        emoji
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Emit via socket for real-time updates
+      if (socket) {
+        socket.emit('message_reaction', {
+          messageId,
+          emoji,
+          chatId: parseInt(chatId!)
+        });
+      }
+    } catch (error) {
+      console.error('Error adding reaction:', error);
+      toast.error('Failed to add reaction');
+    }
+  };
+
+  const handleRemoveReaction = async (reactionId: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_BASE_URL}/api/messages/reactions/${reactionId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (error) {
+      console.error('Error removing reaction:', error);
+      toast.error('Failed to remove reaction');
+    }
+  };
+
+  const handleReply = (message: Message) => {
+    setReplyingTo(message);
+    inputRef.current?.focus();
+  };
+
+  const handleEdit = (message: Message) => {
+    setEditingMessage(message);
+    setNewMessage(message.content);
+    inputRef.current?.focus();
+  };
+
+  const handleDelete = async (messageId: number) => {
+    if (!confirm('Are you sure you want to delete this message?')) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_BASE_URL}/api/messages/${messageId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setMessages(prev => prev.filter(msg => msg.id !== messageId));
+      toast.success('Message deleted');
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      toast.error('Failed to delete message');
     }
   };
 
@@ -310,13 +465,19 @@ const ChatView: React.FC = () => {
       />
 
       {/* Messages */}
-      <div className="flex-1 pt-20 pb-24 overflow-y-auto custom-scrollbar bg-gray-50">
+      <div className="flex-1 pt-20 pb-32 overflow-y-auto custom-scrollbar bg-gray-50">
         <div className="px-4 py-6 space-y-4">
           {messages.map(message => (
             <MessageBubble
               key={message.id}
               message={message}
               isOwn={message.sender.id === user?.id}
+              onReply={handleReply}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onReact={handleReaction}
+              onRemoveReaction={handleRemoveReaction}
+              currentUserId={user?.id || 0}
             />
           ))}
           
@@ -328,6 +489,28 @@ const ChatView: React.FC = () => {
           <div ref={messagesEndRef} />
         </div>
       </div>
+
+      {/* Reply Preview */}
+      {replyingTo && (
+        <div className="fixed bottom-24 left-0 right-0 bg-gray-100 border-t border-gray-200 p-4 z-30">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-primary-800">
+                Replying to {replyingTo.sender.username}
+              </p>
+              <p className="text-sm text-gray-600 truncate">
+                {replyingTo.content}
+              </p>
+            </div>
+            <button
+              onClick={() => setReplyingTo(null)}
+              className="p-2 hover:bg-gray-200 rounded-full transition-colors duration-200"
+            >
+              <X className="h-5 w-5 text-gray-500" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Message Input */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-30">
@@ -357,7 +540,7 @@ const ChatView: React.FC = () => {
                 setNewMessage(e.target.value);
                 handleTyping();
               }}
-              placeholder="Message..."
+              placeholder={editingMessage ? "Edit message..." : "Message..."}
               className="w-full px-4 py-3 pr-12 bg-gray-100 border-0 rounded-full focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all duration-200 resize-none"
               disabled={sending}
             />
@@ -369,15 +552,33 @@ const ChatView: React.FC = () => {
             </button>
           </div>
           
-          <button
-            type="submit"
-            disabled={!newMessage.trim() || sending}
-            className="p-3 bg-primary-800 text-white rounded-full hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex-shrink-0"
-          >
-            <Send className="h-5 w-5" />
-          </button>
+          {newMessage.trim() ? (
+            <button
+              type="submit"
+              disabled={sending}
+              className="p-3 bg-primary-800 text-white rounded-full hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex-shrink-0"
+            >
+              <Send className="h-5 w-5" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowVoiceRecorder(true)}
+              className="p-3 bg-primary-800 text-white rounded-full hover:bg-primary-700 transition-all duration-200 flex-shrink-0"
+            >
+              <Mic className="h-5 w-5" />
+            </button>
+          )}
         </form>
       </div>
+
+      {/* Voice Recorder Modal */}
+      {showVoiceRecorder && (
+        <VoiceRecorder
+          onSend={sendVoiceMessage}
+          onCancel={() => setShowVoiceRecorder(false)}
+        />
+      )}
     </div>
   );
 };

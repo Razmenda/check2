@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import models from '../models/index.js';
 import { authenticateToken } from '../middleware/auth.js';
 
-const { Message, User, Chat, ChatParticipant } = models;
+const { Message, MessageReaction, MessageStatus, VoiceMessage, User, Chat, ChatParticipant } = models;
 const router = express.Router();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -24,7 +24,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
 });
 
 // Get messages for a chat
@@ -43,12 +43,46 @@ router.get('/:chatId', authenticateToken, async (req, res) => {
     }
 
     const messages = await Message.findAll({
-      where: { chatId },
-      include: [{
-        model: User,
-        as: 'sender',
-        attributes: ['id', 'username', 'avatar']
-      }],
+      where: { 
+        chatId,
+        isDeleted: false
+      },
+      include: [
+        {
+          model: User,
+          as: 'sender',
+          attributes: ['id', 'username', 'avatar']
+        },
+        {
+          model: Message,
+          as: 'replyTo',
+          attributes: ['id', 'content'],
+          include: [{
+            model: User,
+            as: 'sender',
+            attributes: ['username']
+          }]
+        },
+        {
+          model: MessageReaction,
+          as: 'reactions',
+          include: [{
+            model: User,
+            as: 'user',
+            attributes: ['id', 'username', 'avatar']
+          }]
+        },
+        {
+          model: MessageStatus,
+          as: 'statuses',
+          attributes: ['userId', 'status', 'timestamp']
+        },
+        {
+          model: VoiceMessage,
+          as: 'voiceMessage',
+          attributes: ['duration', 'waveform']
+        }
+      ],
       order: [['createdAt', 'DESC']],
       limit: parseInt(limit),
       offset: (parseInt(page) - 1) * parseInt(limit)
@@ -65,7 +99,7 @@ router.get('/:chatId', authenticateToken, async (req, res) => {
 router.post('/:chatId', authenticateToken, upload.single('file'), async (req, res) => {
   try {
     const { chatId } = req.params;
-    const { content, type = 'text' } = req.body;
+    const { content, type = 'text', replyToId, duration } = req.body;
 
     // Check if user is participant in chat
     const participant = await ChatParticipant.findOne({
@@ -80,7 +114,8 @@ router.post('/:chatId', authenticateToken, upload.single('file'), async (req, re
       chatId,
       senderId: req.user.id,
       content: content || '',
-      type
+      type,
+      replyToId: replyToId || null
     };
 
     // Handle file upload
@@ -88,18 +123,80 @@ router.post('/:chatId', authenticateToken, upload.single('file'), async (req, re
       messageData.content = `/uploads/${req.file.filename}`;
       messageData.fileName = req.file.originalname;
       messageData.fileSize = req.file.size;
-      messageData.type = req.file.mimetype.startsWith('image/') ? 'image' : 'file';
+      
+      if (type === 'voice') {
+        messageData.type = 'voice';
+      } else {
+        messageData.type = req.file.mimetype.startsWith('image/') ? 'image' : 'file';
+      }
     }
 
     const message = await Message.create(messageData);
 
-    // Get message with sender info
+    // Create voice message record if it's a voice message
+    if (type === 'voice' && duration) {
+      await VoiceMessage.create({
+        messageId: message.id,
+        duration: parseInt(duration),
+        waveform: null // You can implement waveform generation here
+      });
+    }
+
+    // Get all participants for message status
+    const participants = await ChatParticipant.findAll({
+      where: { chatId },
+      attributes: ['userId']
+    });
+
+    // Create message status for all participants except sender
+    const statusPromises = participants
+      .filter(p => p.userId !== req.user.id)
+      .map(p => MessageStatus.create({
+        messageId: message.id,
+        userId: p.userId,
+        status: 'sent'
+      }));
+
+    await Promise.all(statusPromises);
+
+    // Get message with all relations
     const fullMessage = await Message.findByPk(message.id, {
-      include: [{
-        model: User,
-        as: 'sender',
-        attributes: ['id', 'username', 'avatar']
-      }]
+      include: [
+        {
+          model: User,
+          as: 'sender',
+          attributes: ['id', 'username', 'avatar']
+        },
+        {
+          model: Message,
+          as: 'replyTo',
+          attributes: ['id', 'content'],
+          include: [{
+            model: User,
+            as: 'sender',
+            attributes: ['username']
+          }]
+        },
+        {
+          model: MessageReaction,
+          as: 'reactions',
+          include: [{
+            model: User,
+            as: 'user',
+            attributes: ['id', 'username', 'avatar']
+          }]
+        },
+        {
+          model: MessageStatus,
+          as: 'statuses',
+          attributes: ['userId', 'status', 'timestamp']
+        },
+        {
+          model: VoiceMessage,
+          as: 'voiceMessage',
+          attributes: ['duration', 'waveform']
+        }
+      ]
     });
 
     // Update chat's updatedAt
@@ -111,6 +208,86 @@ router.post('/:chatId', authenticateToken, upload.single('file'), async (req, re
     res.status(201).json(fullMessage);
   } catch (error) {
     console.error('Send message error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// React to message
+router.post('/:messageId/react', authenticateToken, async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { emoji } = req.body;
+
+    const message = await Message.findByPk(messageId);
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    // Check if user has access to this message's chat
+    const participant = await ChatParticipant.findOne({
+      where: { chatId: message.chatId, userId: req.user.id }
+    });
+
+    if (!participant) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    // Check if reaction already exists
+    const existingReaction = await MessageReaction.findOne({
+      where: { messageId, userId: req.user.id, emoji }
+    });
+
+    if (existingReaction) {
+      await existingReaction.destroy();
+    } else {
+      await MessageReaction.create({
+        messageId,
+        userId: req.user.id,
+        emoji
+      });
+    }
+
+    // Get updated reactions
+    const reactions = await MessageReaction.findAll({
+      where: { messageId },
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: ['id', 'username', 'avatar']
+      }]
+    });
+
+    res.json({ reactions });
+  } catch (error) {
+    console.error('React to message error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Mark message as read
+router.post('/:messageId/read', authenticateToken, async (req, res) => {
+  try {
+    const { messageId } = req.params;
+
+    const message = await Message.findByPk(messageId);
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    // Update message status
+    await MessageStatus.update(
+      { status: 'read', timestamp: new Date() },
+      { 
+        where: { 
+          messageId, 
+          userId: req.user.id 
+        } 
+      }
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Mark message as read error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -138,11 +315,32 @@ router.put('/:messageId', authenticateToken, async (req, res) => {
     });
 
     const updatedMessage = await Message.findByPk(messageId, {
-      include: [{
-        model: User,
-        as: 'sender',
-        attributes: ['id', 'username', 'avatar']
-      }]
+      include: [
+        {
+          model: User,
+          as: 'sender',
+          attributes: ['id', 'username', 'avatar']
+        },
+        {
+          model: Message,
+          as: 'replyTo',
+          attributes: ['id', 'content'],
+          include: [{
+            model: User,
+            as: 'sender',
+            attributes: ['username']
+          }]
+        },
+        {
+          model: MessageReaction,
+          as: 'reactions',
+          include: [{
+            model: User,
+            as: 'user',
+            attributes: ['id', 'username', 'avatar']
+          }]
+        }
+      ]
     });
 
     res.json(updatedMessage);
@@ -167,11 +365,36 @@ router.delete('/:messageId', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Not authorized to delete this message' });
     }
 
-    await message.destroy();
+    await message.update({
+      isDeleted: true,
+      deletedAt: new Date()
+    });
 
     res.json({ message: 'Message deleted successfully' });
   } catch (error) {
     console.error('Delete message error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Remove reaction
+router.delete('/reactions/:reactionId', authenticateToken, async (req, res) => {
+  try {
+    const { reactionId } = req.params;
+
+    const reaction = await MessageReaction.findByPk(reactionId);
+    if (!reaction) {
+      return res.status(404).json({ error: 'Reaction not found' });
+    }
+
+    if (reaction.userId !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    await reaction.destroy();
+    res.json({ message: 'Reaction removed successfully' });
+  } catch (error) {
+    console.error('Remove reaction error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

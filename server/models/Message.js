@@ -28,7 +28,7 @@ export default (sequelize) => {
       allowNull: false,
     },
     type: {
-      type: DataTypes.ENUM('text', 'image', 'file', 'audio'),
+      type: DataTypes.ENUM('text', 'image', 'file', 'audio', 'voice', 'video', 'location', 'contact'),
       defaultValue: 'text',
     },
     fileName: {
@@ -47,6 +47,42 @@ export default (sequelize) => {
       type: DataTypes.DATE,
       allowNull: true,
     },
+    replyToId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'Messages',
+        key: 'id',
+      },
+    },
+    isForwarded: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    forwardedFromId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'Messages',
+        key: 'id',
+      },
+    },
+    isDeleted: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    deletedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    expiresAt: {
+      type: DataTypes.DATE,
+      allowNull: true, // for disappearing messages
+    },
+    metadata: {
+      type: DataTypes.JSON,
+      allowNull: true, // for storing additional data like location coordinates, contact info, etc.
+    },
   }, {
     tableName: 'Messages'
   });
@@ -58,6 +94,26 @@ export default (sequelize) => {
     Message.belongsTo(models.User, { 
       foreignKey: 'senderId', 
       as: 'sender' 
+    });
+    Message.belongsTo(models.Message, {
+      foreignKey: 'replyToId',
+      as: 'replyTo'
+    });
+    Message.belongsTo(models.Message, {
+      foreignKey: 'forwardedFromId',
+      as: 'forwardedFrom'
+    });
+    Message.hasMany(models.MessageReaction, {
+      foreignKey: 'messageId',
+      as: 'reactions'
+    });
+    Message.hasMany(models.MessageStatus, {
+      foreignKey: 'messageId',
+      as: 'statuses'
+    });
+    Message.hasOne(models.VoiceMessage, {
+      foreignKey: 'messageId',
+      as: 'voiceMessage'
     });
   };
 
