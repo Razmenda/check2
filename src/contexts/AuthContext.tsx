@@ -32,32 +32,58 @@ export const useAuth = () => {
   return context;
 };
 
+// Enhanced API configuration
 const API_BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:5000';
+
+// Create axios instance with enhanced configuration
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Enhanced request interceptor
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    console.error('Request interceptor error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Enhanced response interceptor
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
 
-  // Configure axios defaults
+  // Enhanced token validation
   useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    } else {
-      delete axios.defaults.headers.common['Authorization'];
-    }
-  }, [token]);
-
-  // Check for existing token on mount
-  useEffect(() => {
-    const checkAuth = async () => {
+    const validateToken = async () => {
       const savedToken = localStorage.getItem('token');
       if (savedToken) {
         try {
-          axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
-          
-          // Validate token by making a request to refresh endpoint
-          const response = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
+          const response = await apiClient.post('/api/auth/refresh', {
             token: savedToken
           });
           
@@ -65,27 +91,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setToken(response.data.token);
             setUser(response.data.user);
             localStorage.setItem('token', response.data.token);
-            axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
           }
         } catch (error) {
           console.error('Token validation failed:', error);
           localStorage.removeItem('token');
           setToken(null);
           setUser(null);
-          delete axios.defaults.headers.common['Authorization'];
         }
       }
       setLoading(false);
     };
 
-    checkAuth();
+    validateToken();
   }, []);
 
   const login = async (email: string, password: string) => {
     try {
       console.log('🔐 Attempting login for:', email);
       
-      const response = await axios.post(`${API_BASE_URL}/api/auth/login`, {
+      const response = await apiClient.post('/api/auth/login', {
         email: email.trim(),
         password,
       });
@@ -95,7 +119,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setToken(newToken);
       setUser(userData);
       localStorage.setItem('token', newToken);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
       
       console.log('✅ Login successful for:', userData.username);
       toast.success(`Welcome back, ${userData.username}!`);
@@ -111,7 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('📝 Attempting registration for:', email);
       
-      const response = await axios.post(`${API_BASE_URL}/api/auth/signup`, {
+      const response = await apiClient.post('/api/auth/signup', {
         username: username.trim(),
         email: email.trim(),
         password,
@@ -122,7 +145,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setToken(newToken);
       setUser(userData);
       localStorage.setItem('token', newToken);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
       
       console.log('✅ Registration successful for:', userData.username);
       toast.success(`Welcome to Chekawak, ${userData.username}!`);
@@ -139,7 +161,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     setToken(null);
     localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
     toast.success('Logged out successfully');
   };
 

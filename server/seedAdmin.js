@@ -5,17 +5,19 @@ const { User } = models;
 
 export const createAdminUser = async () => {
   try {
+    console.log('👨‍💼 Creating admin user...');
+    
     // Check if admin already exists
     const existingAdmin = await User.findOne({
       where: { email: 'admin@chekawak.com' }
     });
 
     if (existingAdmin) {
-      console.log('Admin user already exists');
+      console.log('✅ Admin user already exists');
       return existingAdmin;
     }
 
-    // Create admin user
+    // Create admin user with enhanced security
     const passwordHash = await bcrypt.hash('admin123', 12);
     
     const adminUser = await User.create({
@@ -24,23 +26,38 @@ export const createAdminUser = async () => {
       passwordHash,
       status: 'online',
       bio: 'System Administrator - Chekawak Messenger',
-      phone: '+1-555-ADMIN'
+      phone: '+1-555-ADMIN',
+      lastSeen: new Date()
     });
 
     console.log('✅ Admin user created successfully!');
-    console.log('📧 Email: admin@chekawak.com');
-    console.log('🔑 Password: admin123');
-    
     return adminUser;
   } catch (error) {
     console.error('❌ Error creating admin user:', error);
+    
+    // If user already exists due to constraint, try to find and return
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      try {
+        const existingUser = await User.findOne({
+          where: { email: 'admin@chekawak.com' }
+        });
+        if (existingUser) {
+          console.log('✅ Admin user found (constraint resolved)');
+          return existingUser;
+        }
+      } catch (findError) {
+        console.error('❌ Error finding existing admin:', findError);
+      }
+    }
+    
     throw error;
   }
 };
 
-// Create some demo users for testing
 export const createDemoUsers = async () => {
   try {
+    console.log('👥 Creating demo users...');
+    
     const demoUsers = [
       {
         username: 'john_doe',
@@ -62,28 +79,72 @@ export const createDemoUsers = async () => {
         password: 'demo123',
         bio: 'Product Manager',
         phone: '+1-555-0103'
+      },
+      {
+        username: 'sarah_connor',
+        email: 'sarah@example.com',
+        password: 'demo123',
+        bio: 'Marketing Specialist',
+        phone: '+1-555-0104'
+      },
+      {
+        username: 'alex_tech',
+        email: 'alex@example.com',
+        password: 'demo123',
+        bio: 'Full Stack Developer',
+        phone: '+1-555-0105'
       }
     ];
 
+    let createdCount = 0;
+    
     for (const userData of demoUsers) {
-      const existingUser = await User.findOne({
-        where: { email: userData.email }
-      });
-
-      if (!existingUser) {
-        const passwordHash = await bcrypt.hash(userData.password, 12);
-        await User.create({
-          username: userData.username,
-          email: userData.email,
-          passwordHash,
-          status: Math.random() > 0.5 ? 'online' : 'offline',
-          bio: userData.bio,
-          phone: userData.phone
+      try {
+        const existingUser = await User.findOne({
+          where: { email: userData.email }
         });
-        console.log(`✅ Demo user created: ${userData.username}`);
+
+        if (!existingUser) {
+          const passwordHash = await bcrypt.hash(userData.password, 12);
+          await User.create({
+            username: userData.username,
+            email: userData.email,
+            passwordHash,
+            status: Math.random() > 0.5 ? 'online' : 'offline',
+            bio: userData.bio,
+            phone: userData.phone,
+            lastSeen: new Date()
+          });
+          console.log(`✅ Demo user created: ${userData.username}`);
+          createdCount++;
+        }
+      } catch (userError) {
+        if (userError.name === 'SequelizeUniqueConstraintError') {
+          console.log(`⚠️  Demo user ${userData.username} already exists`);
+        } else {
+          console.error(`❌ Error creating demo user ${userData.username}:`, userError);
+        }
       }
     }
+    
+    console.log(`✅ Demo users setup complete (${createdCount} new users created)`);
   } catch (error) {
     console.error('❌ Error creating demo users:', error);
+  }
+};
+
+// Additional utility function to reset all users
+export const resetUsers = async () => {
+  try {
+    console.log('🔄 Resetting all users...');
+    await User.destroy({ where: {}, force: true });
+    console.log('✅ All users reset');
+    
+    // Recreate admin and demo users
+    await createAdminUser();
+    await createDemoUsers();
+  } catch (error) {
+    console.error('❌ Error resetting users:', error);
+    throw error;
   }
 };
