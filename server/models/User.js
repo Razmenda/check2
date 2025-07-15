@@ -33,7 +33,7 @@ export default (sequelize) => {
       },
     },
     status: {
-      type: DataTypes.ENUM('online', 'offline', 'away'),
+      type: DataTypes.ENUM('online', 'offline', 'away', 'busy', 'invisible'),
       defaultValue: 'offline',
     },
     avatar: {
@@ -54,6 +54,65 @@ export default (sequelize) => {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
+    isVerified: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    twoFactorEnabled: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    twoFactorSecret: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    language: {
+      type: DataTypes.STRING,
+      defaultValue: 'en',
+    },
+    timezone: {
+      type: DataTypes.STRING,
+      defaultValue: 'UTC',
+    },
+    theme: {
+      type: DataTypes.ENUM('light', 'dark', 'auto'),
+      defaultValue: 'auto',
+    },
+    notificationSettings: {
+      type: DataTypes.JSON,
+      defaultValue: {
+        messages: true,
+        calls: true,
+        groups: true,
+        stories: true,
+        sound: true,
+        vibration: true,
+        preview: true
+      }
+    },
+    privacySettings: {
+      type: DataTypes.JSON,
+      defaultValue: {
+        lastSeen: 'everyone',
+        profilePhoto: 'everyone',
+        about: 'everyone',
+        status: 'contacts',
+        readReceipts: true,
+        groups: 'everyone'
+      }
+    },
+    blockedUsers: {
+      type: DataTypes.JSON,
+      defaultValue: []
+    },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
+    deviceTokens: {
+      type: DataTypes.JSON,
+      defaultValue: []
+    }
   }, {
     tableName: 'Users',
     indexes: [
@@ -64,6 +123,12 @@ export default (sequelize) => {
       {
         unique: true,
         fields: ['username']
+      },
+      {
+        fields: ['status']
+      },
+      {
+        fields: ['lastSeen']
       }
     ]
   });
@@ -100,6 +165,18 @@ export default (sequelize) => {
     User.hasMany(models.MessageStatus, {
       foreignKey: 'userId',
       as: 'messageStatuses'
+    });
+    User.hasMany(models.Contact, {
+      foreignKey: 'userId',
+      as: 'contacts'
+    });
+    User.hasMany(models.Contact, {
+      foreignKey: 'contactId',
+      as: 'contactOf'
+    });
+    User.hasMany(models.UserSession, {
+      foreignKey: 'userId',
+      as: 'sessions'
     });
   };
 

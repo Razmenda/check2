@@ -6,14 +6,17 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import cron from 'node-cron';
 
-import { sequelize, testConnection, syncDatabase, healthCheck } from './models/index.js';
+import { sequelize, testConnection, syncDatabase, healthCheck, cleanupExpiredSessions, cleanupExpiredNotifications } from './models/index.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import chatRoutes from './routes/chats.js';
 import messageRoutes from './routes/messages.js';
 import callRoutes from './routes/calls.js';
 import storyRoutes from './routes/stories.js';
+import notificationRoutes from './routes/notifications.js';
+import contactRoutes from './routes/contacts.js';
 import { authenticateSocket } from './middleware/auth.js';
 import { handleSocketConnection } from './socket/socketHandlers.js';
 import { createAdminUser, createDemoUsers } from './seedAdmin.js';
@@ -94,7 +97,7 @@ app.get('/health', async (req, res) => {
       uptime: process.uptime(),
       memory: process.memoryUsage(),
       database: dbHealth,
-      version: '1.0.0'
+      version: '2.0.0'
     });
   } catch (error) {
     res.status(500).json({
@@ -112,6 +115,8 @@ app.use('/api/chats', chatRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/calls', callRoutes);
 app.use('/api/stories', storyRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/contacts', contactRoutes);
 
 // Global error handling middleware
 app.use((error, req, res, next) => {
@@ -165,10 +170,10 @@ if (process.env.NODE_ENV === 'production') {
   // Development route with comprehensive API info
   app.get('/', (req, res) => {
     res.json({ 
-      message: 'Chekawak Messenger API Server',
+      message: 'Chekawak Messenger API Server - Enhanced Version',
       status: 'running',
       environment: 'development',
-      version: '1.0.0',
+      version: '2.0.0',
       endpoints: {
         auth: '/api/auth',
         users: '/api/users',
@@ -176,6 +181,8 @@ if (process.env.NODE_ENV === 'production') {
         messages: '/api/messages',
         calls: '/api/calls',
         stories: '/api/stories',
+        notifications: '/api/notifications',
+        contacts: '/api/contacts',
         health: '/health'
       },
       credentials: {
@@ -189,25 +196,45 @@ if (process.env.NODE_ENV === 'production') {
         }
       },
       features: [
-        'Real-time messaging',
-        'Voice messages',
-        'Story system',
-        'File sharing',
-        'Video calls',
-        'Message reactions',
-        'Read receipts',
-        'Typing indicators'
+        'Real-time messaging with mentions',
+        'Voice messages with waveform',
+        'Story system with reactions',
+        'File sharing with previews',
+        'Video calls with WebRTC',
+        'Message reactions and replies',
+        'Read receipts and status',
+        'Typing indicators',
+        'Push notifications',
+        'Contact management',
+        'Message forwarding',
+        'Message pinning and starring',
+        'User presence tracking',
+        'Session management',
+        'Advanced search',
+        'Dark/Light themes'
       ]
     });
   });
 }
+
+// Scheduled cleanup tasks
+cron.schedule('0 0 * * *', async () => {
+  console.log('🧹 Running daily cleanup tasks...');
+  try {
+    await cleanupExpiredSessions();
+    await cleanupExpiredNotifications();
+    console.log('✅ Daily cleanup completed');
+  } catch (error) {
+    console.error('❌ Cleanup task failed:', error);
+  }
+});
 
 const PORT = process.env.PORT || 5000;
 
 // Enhanced server startup with comprehensive error handling
 async function startServer() {
   try {
-    console.log('\n🚀 Starting Chekawak Messenger Server...');
+    console.log('\n🚀 Starting Chekawak Messenger Server v2.0...');
     console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`🔌 Port: ${PORT}`);
     
@@ -231,7 +258,7 @@ async function startServer() {
     
     // Start server
     server.listen(PORT, '0.0.0.0', () => {
-      console.log('\n✅ Chekawak Messenger Server Started Successfully!');
+      console.log('\n✅ Chekawak Messenger Server v2.0 Started Successfully!');
       console.log(`🌐 Server URL: http://localhost:${PORT}`);
       console.log(`📡 Socket.IO: Ready for connections`);
       console.log(`💾 Database: SQLite (${process.env.DB_PATH || './database.sqlite'})`);
@@ -255,16 +282,24 @@ async function startServer() {
       console.log(`   Messages: http://localhost:${PORT}/api/messages`);
       console.log(`   Calls: http://localhost:${PORT}/api/calls`);
       console.log(`   Stories: http://localhost:${PORT}/api/stories`);
+      console.log(`   Notifications: http://localhost:${PORT}/api/notifications`);
+      console.log(`   Contacts: http://localhost:${PORT}/api/contacts`);
       
-      console.log('\n🎯 Features Available:');
-      console.log('   ✅ Real-time messaging with Socket.IO');
-      console.log('   ✅ Voice messages with waveform');
-      console.log('   ✅ Story system with media support');
-      console.log('   ✅ File and image sharing');
+      console.log('\n🎯 Enhanced Features Available:');
+      console.log('   ✅ Real-time messaging with @mentions');
+      console.log('   ✅ Voice messages with waveform visualization');
+      console.log('   ✅ Story system with media and reactions');
+      console.log('   ✅ Advanced message features (pin, star, forward)');
+      console.log('   ✅ Push notification system');
+      console.log('   ✅ Contact management with blocking');
+      console.log('   ✅ Session management and security');
+      console.log('   ✅ File sharing with previews');
       console.log('   ✅ Message reactions and replies');
       console.log('   ✅ Read receipts and typing indicators');
-      console.log('   ✅ Group chats and calls');
-      console.log('   ✅ User presence and status');
+      console.log('   ✅ User presence and status tracking');
+      console.log('   ✅ Group chats with admin controls');
+      console.log('   ✅ WebRTC video/audio calls');
+      console.log('   ✅ Automated cleanup tasks');
       
       console.log('\n🚀 Ready to accept connections!');
     });
